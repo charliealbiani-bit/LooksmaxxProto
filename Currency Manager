@@ -1,0 +1,46 @@
+diff --git a/LooksmaxxerIdle/scripts/managers/CurrencyManager.gd b/LooksmaxxerIdle/scripts/managers/CurrencyManager.gd
+new file mode 100644
+index 0000000000000000000000000000000000000000..f09f3bf7bacef619c06b5b970a629ded6383ff62
+--- /dev/null
++++ b/LooksmaxxerIdle/scripts/managers/CurrencyManager.gd
+@@ -0,0 +1,40 @@
++extends Node
++
++## Handles all Looks Points math in one place.
++signal currency_changed(new_total: float)
++
++var looks_points: float = 0.0
++var click_value: float = 1.0
++var passive_per_second: float = 0.0
++
++func add_points(amount: float) -> void:
++	looks_points += amount
++	currency_changed.emit(looks_points)
++
++func spend_points(amount: float) -> bool:
++	if looks_points >= amount:
++		looks_points -= amount
++		currency_changed.emit(looks_points)
++		return true
++	return false
++
++func click_gain() -> void:
++	add_points(click_value)
++
++func tick_passive(delta: float) -> void:
++	if passive_per_second <= 0.0:
++		return
++	add_points(passive_per_second * delta)
++
++func get_state() -> Dictionary:
++	return {
++		"looks_points": looks_points,
++		"click_value": click_value,
++		"passive_per_second": passive_per_second
++	}
++
++func load_state(data: Dictionary) -> void:
++	looks_points = data.get("looks_points", 0.0)
++	click_value = data.get("click_value", 1.0)
++	passive_per_second = data.get("passive_per_second", 0.0)
++	currency_changed.emit(looks_points)
