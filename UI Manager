@@ -1,0 +1,53 @@
+diff --git a/LooksmaxxerIdle/scripts/ui/UIManager.gd b/LooksmaxxerIdle/scripts/ui/UIManager.gd
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d55565debe1002e8028a57b9e2cfa7a87b1542c
+--- /dev/null
++++ b/LooksmaxxerIdle/scripts/ui/UIManager.gd
+@@ -0,0 +1,47 @@
++extends Node
++
++## Keeps references to major labels/buttons and refreshes UI text.
++var root: Control
++var currency_label: Label
++var stage_label: Label
++var passive_label: Label
++var click_label: Label
++var upgrades_container: VBoxContainer
++
++func register_ui(ui_root: Control) -> void:
++	root = ui_root
++	currency_label = root.get_node("TopBar/CurrencyLabel")
++	stage_label = root.get_node("TopBar/StageLabel")
++	passive_label = root.get_node("TopBar/PassiveLabel")
++	click_label = root.get_node("TopBar/ClickLabel")
++	upgrades_container = root.get_node("UpgradePanel/Scroll/Margin/UpgradeList")
++	CurrencyManager.currency_changed.connect(_on_currency_changed)
++	UpgradeManager.upgrades_changed.connect(_rebuild_upgrade_buttons)
++	_rebuild_upgrade_buttons()
++	refresh_all()
++
++func refresh_all() -> void:
++	_on_currency_changed(CurrencyManager.looks_points)
++	stage_label.text = "Stage: %s" % GameManager.get_stage_name()
++	passive_label.text = "Passive: %.1f /s" % CurrencyManager.passive_per_second
++	click_label.text = "Click: +%.1f" % CurrencyManager.click_value
++
++func _on_currency_changed(new_total: float) -> void:
++	currency_label.text = "Looks Points: %.1f" % new_total
++	stage_label.text = "Stage: %s" % GameManager.get_stage_name()
++	passive_label.text = "Passive: %.1f /s" % CurrencyManager.passive_per_second
++	click_label.text = "Click: +%.1f" % CurrencyManager.click_value
++
++func _rebuild_upgrade_buttons() -> void:
++	for child in upgrades_container.get_children():
++		child.queue_free()
++	for i in UpgradeManager.upgrades.size():
++		var u := UpgradeManager.upgrades[i]
++		var b := Button.new()
++		b.custom_minimum_size = Vector2(0, 70)
++		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
++		b.tooltip_text = u.description
++		b.pressed.connect(func() -> void: UpgradeManager.buy(i))
++		var cost := UpgradeManager.get_cost(i)
++		b.text = "[%s] %s Lv.%d\nCost: %.0f | +%.1f click | +%.1f/s" % [u.category, u.name, u.level, cost, u.click_bonus, u.passive_bonus]
++		upgrades_container.add_child(b)
