@@ -1,0 +1,36 @@
+diff --git a/LooksmaxxerIdle/scripts/managers/GameManager.gd b/LooksmaxxerIdle/scripts/managers/GameManager.gd
+new file mode 100644
+index 0000000000000000000000000000000000000000..3eb35facb34d8b3a313bd1008bc56860703992b3
+--- /dev/null
++++ b/LooksmaxxerIdle/scripts/managers/GameManager.gd
+@@ -0,0 +1,30 @@
++extends Node
++
++## Owns progression stages and high-level game loop values.
++var stages := ["Beginner", "Softmaxxing", "Midmaxxing", "Hardmaxxing", "Elite Status"]
++var current_stage_index := 0
++
++func _process(_delta: float) -> void:
++	_update_stage()
++
++func _update_stage() -> void:
++	var total := CurrencyManager.looks_points
++	if total >= 50000:
++		current_stage_index = 4
++	elif total >= 12000:
++		current_stage_index = 3
++	elif total >= 3000:
++		current_stage_index = 2
++	elif total >= 500:
++		current_stage_index = 1
++	else:
++		current_stage_index = 0
++
++func get_stage_name() -> String:
++	return stages[current_stage_index]
++
++func get_state() -> Dictionary:
++	return {"stage": current_stage_index}
++
++func load_state(data: Dictionary) -> void:
++	current_stage_index = clampi(data.get("stage", 0), 0, stages.size() - 1)
