@@ -1,0 +1,88 @@
+diff --git a/LooksmaxxerIdle/scripts/managers/UpgradeManager.gd b/LooksmaxxerIdle/scripts/managers/UpgradeManager.gd
+new file mode 100644
+index 0000000000000000000000000000000000000000..cc91533b6743334611837c490e1a2299a73152bb
+--- /dev/null
++++ b/LooksmaxxerIdle/scripts/managers/UpgradeManager.gd
+@@ -0,0 +1,82 @@
++extends Node
++
++## Stores upgrade definitions and all cost/income calculations.
++signal upgrades_changed
++
++var upgrades: Array[Dictionary] = []
++
++func _ready() -> void:
++	_build_upgrade_data()
++
++func _build_upgrade_data() -> void:
++	upgrades = [
++		_make_upgrade("FACEMAXXING", "Skincare Routine", "Hydration + SPF. Your skin starts glowing.", 15, 0.0, 0.2),
++		_make_upgrade("FACEMAXXING", "Gua Sha", "Sculpted vibes in 5 minutes.", 45, 0.0, 0.7),
++		_make_upgrade("FACEMAXXING", "Ice Rolling", "De-puff speedrun.", 90, 0.0, 1.3),
++		_make_upgrade("FACEMAXXING", "Jawline Gum", "Chew for that cinematic side profile.", 180, 0.5, 1.7),
++		_make_upgrade("FACEMAXXING", "Neck Curls", "Posture gains unlocked.", 360, 0.5, 2.8),
++		_make_upgrade("FACEMAXXING", "Haircare", "Shampoo lore + conditioner meta.", 700, 1.0, 4.5),
++		_make_upgrade("FACEMAXXING", "Retinol", "Night routine = legendary.", 1300, 1.0, 7.0),
++		_make_upgrade("FACEMAXXING", "Beard Routine", "Edges so clean they need a permit.", 2400, 1.2, 11.0),
++		_make_upgrade("GYMMAXXING", "Gym Membership", "The first swole step.", 120, 0.0, 2.0),
++		_make_upgrade("GYMMAXXING", "Protein Powder", "Vanilla chalk power.", 300, 0.5, 4.0),
++		_make_upgrade("GYMMAXXING", "Creatine", "Hydration check, gains check.", 850, 1.0, 8.0),
++		_make_upgrade("GYMMAXXING", "Personal Trainer", "No excuses arc.", 3000, 2.0, 20.0),
++		_make_upgrade("CHARISMA", "Fashion Sense", "Fit check approved.", 250, 0.5, 3.0),
++		_make_upgrade("CHARISMA", "Confidence", "Main-character posture unlocked.", 650, 1.0, 6.0),
++		_make_upgrade("CHARISMA", "Social Skills", "Charisma crit chance increased.", 1800, 1.5, 15.0),
++		_make_upgrade("FINANCEMAXXING", "Side Hustle", "Monetize literally anything.", 550, 0.5, 5.0),
++		_make_upgrade("FINANCEMAXXING", "Investing", "Compounding memes, responsibly.", 2200, 1.5, 18.0),
++		_make_upgrade("FINANCEMAXXING", "Startup Grind", "Sleep is optional. Valuation is not.", 5000, 3.0, 45.0)
++	]
++
++func _make_upgrade(category: String, name: String, desc: String, base_cost: float, click_bonus: float, passive_bonus: float) -> Dictionary:
++	return {
++		"category": category,
++		"name": name,
++		"description": desc,
++		"base_cost": base_cost,
++		"level": 0,
++		"click_bonus": click_bonus,
++		"passive_bonus": passive_bonus,
++		"cost_scale": 1.15
++	}
++
++func get_cost(index: int) -> float:
++	var u := upgrades[index]
++	return floor(u.base_cost * pow(u.cost_scale, u.level))
++
++func can_buy(index: int) -> bool:
++	return CurrencyManager.looks_points >= get_cost(index)
++
++func buy(index: int) -> bool:
++	var cost := get_cost(index)
++	if CurrencyManager.spend_points(cost):
++		upgrades[index].level += 1
++		_recalculate_bonuses()
++		upgrades_changed.emit()
++		return true
++	return false
++
++func _recalculate_bonuses() -> void:
++	var click_total := 1.0
++	var passive_total := 0.0
++	for u in upgrades:
++		click_total += u.level * u.click_bonus
++		passive_total += u.level * u.passive_bonus
++	CurrencyManager.click_value = click_total
++	CurrencyManager.passive_per_second = passive_total
++
++func get_state() -> Dictionary:
++	var levels: Array[int] = []
++	for u in upgrades:
++		levels.append(u.level)
++	return {"levels": levels}
++
++func load_state(data: Dictionary) -> void:
++	var levels: Array = data.get("levels", [])
++	for i in upgrades.size():
++		if i < levels.size():
++			upgrades[i].level = int(levels[i])
++	_recalculate_bonuses()
++	upgrades_changed.emit()
