@@ -1,0 +1,41 @@
+diff --git a/LooksmaxxerIdle/scripts/managers/SaveManager.gd b/LooksmaxxerIdle/scripts/managers/SaveManager.gd
+new file mode 100644
+index 0000000000000000000000000000000000000000..654da65f1abe296be40b28df3c141856bb3a4679
+--- /dev/null
++++ b/LooksmaxxerIdle/scripts/managers/SaveManager.gd
+@@ -0,0 +1,35 @@
++extends Node
++
++const SAVE_PATH := "user://looksmaxxer_save.json"
++
++func save_game() -> void:
++	var data := {
++		"currency": CurrencyManager.get_state(),
++		"upgrades": UpgradeManager.get_state(),
++		"progression": GameManager.get_state(),
++		"save_time": Time.get_unix_time_from_system()
++	}
++	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
++	if file:
++		file.store_string(JSON.stringify(data))
++
++func load_game() -> void:
++	if not FileAccess.file_exists(SAVE_PATH):
++		return
++	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
++	if not file:
++		return
++	var parsed := JSON.parse_string(file.get_as_text())
++	if typeof(parsed) != TYPE_DICTIONARY:
++		return
++	CurrencyManager.load_state(parsed.get("currency", {}))
++	UpgradeManager.load_state(parsed.get("upgrades", {}))
++	GameManager.load_state(parsed.get("progression", {}))
++	_apply_offline_earnings(parsed.get("save_time", Time.get_unix_time_from_system()))
++
++func _apply_offline_earnings(last_time: int) -> void:
++	var now := Time.get_unix_time_from_system()
++	var away_seconds := max(0, now - last_time)
++	var capped := min(away_seconds, 60 * 60 * 8) # Cap at 8h for balance.
++	var earnings := CurrencyManager.passive_per_second * capped * 0.5 # 50% efficiency.
++	CurrencyManager.add_points(earnings)
